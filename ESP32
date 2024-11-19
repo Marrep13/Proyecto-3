@@ -1,0 +1,89 @@
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP085_U.h>
+#include <SPI.h>
+#include <Adafruit_NeoPixel.h>
+
+#define PIN 14          // Pin de datos del NeoPixel
+#define NUMPIXELS 16   // Número de LEDs en el NeoPixel
+
+
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+uint8_t delayMs = 50; 
+uint8_t red = 255;
+uint8_t green = 0;
+uint8_t blue = 0;
+
+void cascadeEffect(float presion);
+
+char comando;
+
+void setup() {
+    for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(255, 0, 0));  // Enciende el LEDs rojo
+    pixels.show();                                           // Actualiza los LEDs
+    delay(delayMs);                                          // Espera
+  }
+    for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, 0);  // Apaga los LEDs
+  }
+    pixels.show();  // Actualiza los LEDs
+    Serial2.begin(115200, SERIAL_8N1, 16,17);  // Comunicación UART con el STM32
+    Serial.begin(115200);   // Para depuración en el monitor serial
+    Serial.println("Altitude Sensor Test");
+
+    if (!bmp.begin()) {
+        Serial.println("Ooops, no BMP085 detected ... Check your wiring or I2C ADDR!");
+        while (1);
+    }
+
+}
+
+void loop() {
+    sensors_event_t event;
+    bmp.getEvent(&event);
+    
+    // Verificar si hay comando del STM32
+    if (Serial2.available() > 0) {
+        comando = Serial2.read();  // Leer el comando
+        Serial.print("Comando recibido: ");
+        float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
+        Serial.print(bmp.pressureToAltitude(seaLevelPressure,
+                                        event.pressure));
+        Serial.println("simandouno");
+        Serial.println(comando);
+        for (int i = 0; i < NUMPIXELS; i++) {
+            pixels.setPixelColor(i, pixels.Color(255, 255, 0));  // Enciende el LED amarillo
+            pixels.show();                                           // Actualiza los LEDs
+            delay(delayMs);                                          // Espera
+          }
+            for (int i = 0; i < NUMPIXELS; i++) {
+            pixels.setPixelColor(i, 0);  // Apaga los LEDs
+          }
+            pixels.show();  // Actualiza los LEDs
+
+
+    if (comando == 'R') {  // Si recibe 'R', envía la presión
+
+    float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
+    Serial2.print(bmp.pressureToAltitude(seaLevelPressure,
+                                        event.pressure), 2);
+    //Serial2.print(event.altitude, 2);       // Enviar presión al STM32
+            for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, pixels.Color(0, 0, 255));  // Enciende el LED verde
+    pixels.show();                                           // Actualiza los LEDs
+    delay(delayMs);                                          // Espera
+  }
+    for (int i = 0; i < NUMPIXELS; i++) {
+    pixels.setPixelColor(i, 0);  // Apaga los LEDs
+  }
+    pixels.show();  // Actualiza los LEDs
+    }
+
+    }
+
+}
+
